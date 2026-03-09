@@ -9,6 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@deck.gl/aggregation-layers": "^9.2.11",
+    "@deck.gl/core": "^9.2.11",
+    "@deck.gl/google-maps": "^9.2.11",
+    "@deck.gl/layers": "^9.2.11",
+    "@googlemaps/js-api-loader": "^2.0.2",
+    "firebase": "^12.10.0",
+    "pinia": "^3.0.4",
     "vue": "^3.5.25"
   },
   "devDependencies": {

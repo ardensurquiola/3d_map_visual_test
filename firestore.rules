@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Public read access to shops collection (static data)
+    match /shops/{shopId} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

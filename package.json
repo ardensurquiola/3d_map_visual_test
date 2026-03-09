@@ -8,12 +8,16 @@
     "start": "node index.js",
     "denue-only": "node index.js --denue-only",
     "google-only": "node index.js --google-only",
-    "merge": "node index.js --merge"
+    "merge": "node index.js --merge",
+    "add-sample-columns": "node add-dummy-columns.js"
   },
   "dependencies": {
     "axios": "^1.7.0",
     "csv-writer": "^1.6.0",
     "dotenv": "^16.4.0",
     "string-similarity": "^4.0.4"
+  },
+  "devDependencies": {
+    "papaparse": "^5.5.3"
   }
 }
