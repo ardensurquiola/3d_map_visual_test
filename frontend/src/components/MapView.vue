@@ -44,7 +44,7 @@ const hoverInfo = ref(null);
 let googleMap = null;
 let deckOverlay = null;
 
-const MEXICO_CENTER = { lat: 23.6345, lng: -102.5528 };
+const MEXICO_CENTER = { lat: 19.4326, lng: -99.1332 };
 
 onMounted(async () => {
   // Wait for the global Maps script tag to finish loading
@@ -54,7 +54,7 @@ onMounted(async () => {
 
   googleMap = new window.google.maps.Map(mapContainer.value, {
     center: MEXICO_CENTER,
-    zoom: 5,
+    zoom: 11,
     mapTypeId: 'roadmap',
     mapId,
     tilt: 0,
@@ -270,7 +270,7 @@ const DARK_MAP_STYLES = [
 
 .zoom-controls {
   position: absolute;
-  bottom: 32px;
+  bottom: 52px;
   left: 16px;
   display: flex;
   flex-direction: column;

@@ -61,7 +61,11 @@ function aggregateForCompare(data) {
 export function useDeckLayers(filteredShops, viewMode, onHover, showPurchases, showAvgOrder, onClickCallback) {
   const layers = computed(() => {
     const data = filteredShops.value.filter(
-      (s) => s.latitude != null && s.longitude != null
+      (s) =>
+        s.latitude != null &&
+        s.longitude != null &&
+        Number.isFinite(+s.latitude) &&
+        Number.isFinite(+s.longitude)
     );
 
     // ── 3D Density (HexagonLayer) ──────────────────────────────────────────
@@ -74,7 +78,7 @@ export function useDeckLayers(filteredShops, viewMode, onHover, showPurchases, s
         new HexagonLayer({
           id: 'hexagon-layer',
           data,
-          getPosition: (d) => [d.longitude, d.latitude],
+          getPosition: (d) => [+d.longitude, +d.latitude],
           getElevationWeight,
           radius: 5000,
           elevationScale: 0.5,
@@ -111,7 +115,7 @@ export function useDeckLayers(filteredShops, viewMode, onHover, showPurchases, s
           new ColumnLayer({
             id: 'purchases-column',
             data,
-            getPosition: (d) => [d.longitude + offset, d.latitude],
+            getPosition: (d) => [+d.longitude + offset, +d.latitude],
             getElevation: (d) => ((Number(d.purchases) || 0) / maxPurchases) * MAX_ELEVATION,
             getFillColor: (d) => {
               const t = (Number(d.purchases) || 0) / maxPurchases;
@@ -137,7 +141,7 @@ export function useDeckLayers(filteredShops, viewMode, onHover, showPurchases, s
           new ColumnLayer({
             id: 'avgorder-column',
             data,
-            getPosition: (d) => [d.longitude + offset, d.latitude],
+            getPosition: (d) => [+d.longitude + offset, +d.latitude],
             getElevation: (d) => ((Number(d.average_order) || 0) / maxAvgOrder) * MAX_ELEVATION,
             getFillColor: (d) => {
               const t = (Number(d.average_order) || 0) / maxAvgOrder;
@@ -164,7 +168,7 @@ export function useDeckLayers(filteredShops, viewMode, onHover, showPurchases, s
       new ScatterplotLayer({
         id: 'scatter-layer',
         data,
-        getPosition: (d) => [d.longitude, d.latitude],
+        getPosition: (d) => [+d.longitude, +d.latitude],
         getFillColor: shopColor,
         getRadius: 300,
         radiusMinPixels: 4,

@@ -229,15 +229,13 @@
           <!-- Principal proveedor -->
           <div class="chip-row">
             <span class="score-label">Proveedor principal</span>
-            <div class="chip-group">
-              <button
-                v-for="opt in PROVEEDOR_OPTS" :key="opt"
-                class="chip-btn"
-                :class="{ active: surveyData.principal_proveedor === opt }"
-                :disabled="surveyingSaving"
-                @click="handleSurveyField('principal_proveedor', surveyData.principal_proveedor === opt ? null : opt)"
-              >{{ opt }}</button>
-            </div>
+            <ProveedorSelect
+              :model-value="proveedorValue"
+              :options="PROVEEDOR_OPTS"
+              :disabled="surveyingSaving"
+              placeholder="Buscar proveedor…"
+              @update:modelValue="handleSurveyField('principal_proveedor', $event)"
+            />
           </div>
 
           <!-- Contacto personal del tomador de decisión -->
@@ -328,6 +326,7 @@
 import { computed, ref, watch } from 'vue';
 import { useVisited } from '../composables/useVisited.js';
 import { useShopStatus } from '../composables/useShopStatus.js';
+import ProveedorSelect from './ProveedorSelect.vue';
 
 const props = defineProps({
   shop: { type: Object, default: null },
@@ -414,6 +413,13 @@ const visitedEntry = computed(() =>
 
 // Reactive survey values for the current shop
 const surveyData = computed(() => visitedEntry.value ?? {});
+
+// Normalize principal_proveedor to always be an array (legacy data may be a string)
+const proveedorValue = computed(() => {
+  const v = surveyData.value.principal_proveedor;
+  if (!v) return [];
+  return Array.isArray(v) ? v : [v];
+});
 
 async function handleSurveyField(field, value) {
   if (!props.shop?.id || surveyingSaving.value) return;

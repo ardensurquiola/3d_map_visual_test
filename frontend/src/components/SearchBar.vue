@@ -13,7 +13,7 @@
         placeholder="Buscar tiendas, ciudades, calles, estados…"
         class="search-input"
         autocomplete="off"
-        @focus="focused = true"
+        @focus="handleFocus"
         @keydown.escape="close"
         @keydown.arrow-down.prevent="moveSelection(1)"
         @keydown.arrow-up.prevent="moveSelection(-1)"
@@ -27,8 +27,9 @@
       </button>
     </div>
 
-    <!-- Results dropdown -->
-    <div v-if="showDropdown" class="dropdown">
+    <!-- Results dropdown — teleported to body on mobile so header height doesn't clip it -->
+    <Teleport to="body" :disabled="!dropdownStyle">
+    <div v-if="showDropdown" class="dropdown" :style="dropdownStyle ?? {}" :class="{ 'dropdown-teleported': !!dropdownStyle }">
 
       <!-- Location results (Google Places) -->
       <template v-if="locationResults.length">
@@ -84,11 +85,12 @@
         Sin resultados para "{{ query }}"
       </div>
     </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
 
 const props = defineProps({
   shops: { type: Array, default: () => [] },
@@ -101,6 +103,20 @@ const focused = ref(false);
 const selectedIndex = ref(-1);
 const wrapperRef = ref(null);
 const inputRef = ref(null);
+const dropdownStyle = ref(null); // null = use CSS, object = fixed positioning
+
+function computeDropdownPos() {
+  if (window.innerWidth > 640) { dropdownStyle.value = null; return; }
+  const rect = wrapperRef.value?.getBoundingClientRect();
+  if (!rect) return;
+  dropdownStyle.value = {
+    position: 'fixed',
+    top: `${rect.bottom + 6}px`,
+    left: '8px',
+    right: '8px',
+    zIndex: '400',
+  };
+}
 
 const locationResults = ref([]);
 const loadingPlaces = ref(false);
@@ -239,9 +255,18 @@ function handleClickOutside(e) {
   }
 }
 
-onMounted(() => document.addEventListener('mousedown', handleClickOutside));
+function handleFocus() {
+  focused.value = true;
+  nextTick(computeDropdownPos);
+}
+
+onMounted(() => {
+  document.addEventListener('mousedown', handleClickOutside);
+  window.addEventListener('resize', computeDropdownPos);
+});
 onBeforeUnmount(() => {
   document.removeEventListener('mousedown', handleClickOutside);
+  window.removeEventListener('resize', computeDropdownPos);
   clearTimeout(debounceTimer);
 });
 
@@ -421,13 +446,23 @@ function typeClass(type) {
   .search-wrapper {
     max-width: none;
   }
-
-  .dropdown {
-    position: fixed;
-    left: 8px;
-    right: 8px;
-    top: 56px;
-    z-index: 300;
-  }
 }
+</style>
+
+<!-- Global styles for teleported dropdown on mobile -->
+<style>
+.dropdown-teleported {
+  background: rgba(13, 20, 40, 0.98) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6) !important;
+  backdrop-filter: blur(16px) !important;
+  max-height: 60vh !important;
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.15) transparent;
+}
+.dropdown-teleported::-webkit-scrollbar { width: 4px; }
+.dropdown-teleported::-webkit-scrollbar-track { background: transparent; }
+.dropdown-teleported::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
 </style>
