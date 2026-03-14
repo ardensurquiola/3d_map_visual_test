@@ -72,6 +72,33 @@
               {{ st.label }}
             </label>
           </div>
+
+          <div class="sub-label" style="margin-top: 12px;">Rango de Visita</div>
+          <div class="date-range-row">
+            <div class="date-field">
+              <span class="date-field-label">De</span>
+              <input
+                type="date"
+                class="date-input"
+                :value="modelValue.visitDateFrom ?? ''"
+                :max="modelValue.visitDateTo ?? ''"
+                @change="setFilter('visitDateFrom', $event.target.value || null)"
+              />
+            </div>
+            <div class="date-field">
+              <span class="date-field-label">Hasta</span>
+              <input
+                type="date"
+                class="date-input"
+                :value="modelValue.visitDateTo ?? ''"
+                :min="modelValue.visitDateFrom ?? ''"
+                @change="setFilter('visitDateTo', $event.target.value || null)"
+              />
+            </div>
+          </div>
+          <div v-if="modelValue.visitDateFrom || modelValue.visitDateTo" class="date-clear-row">
+            <button class="date-clear-btn" @click="clearDateRange">Limpiar fechas</button>
+          </div>
         </div>
       </div>
 
@@ -302,6 +329,7 @@ const visitaActiveCount = computed(() => {
   let c = 0;
   if (props.modelValue.showVisitStatus.length < 2) c++;
   if (props.modelValue.showVisitedStatuses.length < 3) c++;
+  if (props.modelValue.visitDateFrom || props.modelValue.visitDateTo) c++;
   return c;
 });
 
@@ -325,6 +353,8 @@ const hasActiveFilters = computed(() =>
   props.modelValue.shopTypes.length < 4 ||
   props.modelValue.showVisitStatus.length < 2 ||
   props.modelValue.showVisitedStatuses.length < 3 ||
+  !!props.modelValue.visitDateFrom ||
+  !!props.modelValue.visitDateTo ||
   props.modelValue.minRating > 0 ||
   evalActiveCount.value > 0
 );
@@ -367,12 +397,14 @@ function resetFilters() {
     viewMode:             props.modelValue.viewMode,
     shopTypes:            ['Repair', 'Parts', 'Both', 'Other'],
     sources:              ['denue', 'google', 'both'],
-    state:                '',
+    state:                [],
     minRating:            0,
     showPurchases:        true,
     showAvgOrder:         true,
     showVisitStatus:      ['visitada', 'no_visitada'],
     showVisitedStatuses:  ['visita_exitosa', 'cerrada', 'cerrada_permanentemente'],
+    visitDateFrom:        null,
+    visitDateTo:          null,
     minScoreGeneral:      0,
     minScorePains:        0,
     minScoreProbabilidad: 0,
@@ -384,6 +416,10 @@ function resetFilters() {
     principalProveedor:   [],
     contactoPersonal:     [],
   });
+}
+
+function clearDateRange() {
+  emit('update:modelValue', { ...props.modelValue, visitDateFrom: null, visitDateTo: null });
 }
 </script>
 
@@ -628,6 +664,65 @@ function resetFilters() {
   color: #fff;
 }
 
+
+/* ── Date range ─────────────────────────────────────── */
+.date-range-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.date-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.date-field-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+  width: 46px;
+}
+
+.date-input {
+  flex: 1;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  color: #cbd5e1;
+  font-size: 11px;
+  font-family: inherit;
+  padding: 4px 6px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+  color-scheme: dark;
+}
+.date-input:hover { border-color: rgba(255, 255, 255, 0.28); }
+.date-input:focus { border-color: #3b82f6; }
+
+.date-clear-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 5px;
+}
+
+.date-clear-btn {
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: #60a5fa;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+}
+.date-clear-btn:hover { text-decoration: underline; }
 
 /* ── Mobile ──────────────────────────────────────────── */
 @media (max-width: 640px) {

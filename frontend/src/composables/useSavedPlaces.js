@@ -30,12 +30,14 @@ export function useSavedPlaces() {
     return `${String(place.lat).replace('.', '_')}_${String(place.lng).replace('.', '_')}`;
   }
 
-  async function savePlace(place, description) {
+  async function savePlace(place, description, category, customName) {
     const id = placeDocId(place);
     const payload = {
       userId: auth.currentUser?.uid ?? null,
       name: place.name || '',
       description: description || '',
+      category: category || 'importance',
+      customName: customName || '',
       formatted_address: place.formatted_address || '',
       lat: place.lat,
       lng: place.lng,
@@ -50,12 +52,16 @@ export function useSavedPlaces() {
     return id;
   }
 
-  async function updateDescription(id, description) {
+  async function updatePlace(id, data) {
     const existing = savedPlaces.value.find((p) => p.id === id);
     if (!existing) return;
-    const updated = { ...existing, description };
+    const updated = { ...existing, ...data };
     await setDoc(doc(db, 'saved_places', id), updated);
-    savedPlaces.value = savedPlaces.value.map((p) => (p.id === id ? { ...p, description } : p));
+    savedPlaces.value = savedPlaces.value.map((p) => (p.id === id ? updated : p));
+  }
+
+  async function updateDescription(id, description) {
+    return updatePlace(id, { description });
   }
 
   async function deletePlace(id) {
@@ -68,5 +74,5 @@ export function useSavedPlaces() {
     return savedPlaces.value.find((p) => p.id === id) ?? null;
   }
 
-  return { savedPlaces, fetchSavedPlaces, savePlace, updateDescription, deletePlace, getSaved, placeDocId };
+  return { savedPlaces, fetchSavedPlaces, savePlace, updatePlace, updateDescription, deletePlace, getSaved, placeDocId };
 }

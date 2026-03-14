@@ -4,6 +4,15 @@ import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [vue()],
+  optimizeDeps: {
+    exclude: [
+      'firebase/app',
+      'firebase/auth',
+      'firebase/firestore',
+      'firebase/storage',
+      'firebase/analytics',
+    ],
+  },
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),

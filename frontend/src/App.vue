@@ -22,15 +22,10 @@
 
       <!-- Search group: Estado select + SearchBar -->
       <div class="header-search-group">
-        <select
-          class="estado-select"
-          :value="filters.state"
-          @change="filters.state = $event.target.value"
-          title="Filtrar por estado"
-        >
-          <option value="">Todo México</option>
-          <option v-for="s in allStates" :key="s" :value="s">{{ s }}</option>
-        </select>
+        <StateDropdown
+          v-model="filters.state"
+          :all-states="allStates"
+        />
         <SearchBar :shops="shops" @fly-to="onFlyTo" />
       </div>
 
@@ -160,6 +155,7 @@ import UserMenu from './components/UserMenu.vue';
 import ProfilePanel from './components/ProfilePanel.vue';
 import BottomLegendBar from './components/BottomLegendBar.vue';
 import FuenteDropdown from './components/FuenteDropdown.vue';
+import StateDropdown from './components/StateDropdown.vue';
 import { useShops } from './composables/useShops.js';
 import { useDeckLayers } from './composables/useDeckLayers.js';
 import { useVisited } from './composables/useVisited.js';
@@ -204,12 +200,14 @@ const filters = ref({
   viewMode:             'points',
   shopTypes:            ['Repair', 'Parts', 'Both', 'Other'],
   sources:              ['denue', 'google', 'both'],
-  state:                '',
+  state:                [],
   minRating:            0,
   showPurchases:        true,
   showAvgOrder:         true,
   showVisitStatus:      ['visitada', 'no_visitada'],
   showVisitedStatuses:  ['visita_exitosa', 'cerrada', 'cerrada_permanentemente'],
+  visitDateFrom:        null,
+  visitDateTo:          null,
   minScoreGeneral:      0,
   minScorePains:        0,
   minScoreProbabilidad: 0,
@@ -228,7 +226,7 @@ const filteredShops = computed(() => {
   return shops.value.filter((s) => {
     if (!filters.value.shopTypes.includes(s.shop_type)) return false;
     if (!filters.value.sources.includes(s.source)) return false;
-    if (filters.value.state && s.state !== filters.value.state) return false;
+    if (filters.value.state.length > 0 && !filters.value.state.includes(s.state)) return false;
     if (filters.value.minRating > 0) {
       if (!s.rating || s.rating < filters.value.minRating) return false;
     }
@@ -241,6 +239,23 @@ const filteredShops = computed(() => {
     if (isVisitada) {
       const vStatus = visitedStatusMap.value.get(s.id) ?? 'visita_exitosa';
       if (!filters.value.showVisitedStatuses.includes(vStatus)) return false;
+    }
+
+    if (isVisitada && (filters.value.visitDateFrom || filters.value.visitDateTo)) {
+      const vd = visitedMap.get(s.id);
+      const rawTs = vd?.statusAt;
+      const visitMs = rawTs
+        ? (typeof rawTs.toDate === 'function' ? rawTs.toDate().getTime() : rawTs.seconds * 1000)
+        : null;
+      if (!visitMs) return false;
+      if (filters.value.visitDateFrom) {
+        const fromMs = new Date(filters.value.visitDateFrom + 'T00:00:00').getTime();
+        if (visitMs < fromMs) return false;
+      }
+      if (filters.value.visitDateTo) {
+        const toMs = new Date(filters.value.visitDateTo + 'T23:59:59').getTime();
+        if (visitMs > toMs) return false;
+      }
     }
 
     if (isVisitada) {

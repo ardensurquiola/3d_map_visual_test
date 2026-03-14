@@ -138,28 +138,45 @@ function setHeading(degrees) {
   googleMap.setHeading(degrees);
 }
 
-// ── Saved-place star markers ─────────────────────────────────────────────────
-const starMarkers = new Map(); // id → AdvancedMarkerElement
+// ── Saved-place markers ───────────────────────────────────────────────────────
+const starMarkers = new Map(); // id → { marker, category }
+
+function getPlaceEmoji(category) {
+  if (category === 'competitor') return '🚩';
+  if (category === 'warehouse') return '📦';
+  return '⭐';
+}
 
 function syncSavedMarkers(places) {
   if (!googleMap || !window.google?.maps?.marker?.AdvancedMarkerElement) return;
 
   // Remove markers for places no longer in the list
   const ids = new Set(places.map((p) => p.id));
-  for (const [id, marker] of starMarkers) {
+  for (const [id, entry] of starMarkers) {
     if (!ids.has(id)) {
-      marker.map = null;
+      entry.marker.map = null;
       starMarkers.delete(id);
     }
   }
 
-  // Add markers for newly saved places
+  // Add or update markers
   for (const place of places) {
-    if (starMarkers.has(place.id)) continue;
+    const category = place.category || 'importance';
+    const existing = starMarkers.get(place.id);
+
+    // Skip if marker exists and category hasn't changed
+    if (existing && existing.category === category) continue;
+
+    // Remove stale marker if category changed
+    if (existing) {
+      existing.marker.map = null;
+      starMarkers.delete(place.id);
+    }
+
     const el = document.createElement('div');
     el.style.cssText = 'font-size:26px;line-height:1;cursor:pointer;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.6));user-select:none;';
-    el.textContent = '⭐';
-    el.title = place.name || place.formatted_address || 'Lugar guardado';
+    el.textContent = getPlaceEmoji(category);
+    el.title = place.customName || place.name || place.formatted_address || 'Lugar guardado';
 
     const marker = new window.google.maps.marker.AdvancedMarkerElement({
       map: googleMap,
@@ -170,7 +187,7 @@ function syncSavedMarkers(places) {
     marker.addListener('gmp-click', () => {
       if (props.onSavedPlaceClick) props.onSavedPlaceClick(place);
     });
-    starMarkers.set(place.id, marker);
+    starMarkers.set(place.id, { marker, category });
   }
 }
 
