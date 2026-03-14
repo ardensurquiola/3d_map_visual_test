@@ -61,6 +61,26 @@
     <div v-else class="tooltip-row small">in this area</div>
   </div>
 
+  <!-- Crime zone tooltip -->
+  <div
+    v-else-if="crimeVisible"
+    class="shop-tooltip crime-tooltip"
+    :style="{ left: crimeX + 'px', top: crimeY + 'px' }"
+  >
+    <div class="crime-header">
+      <span class="crime-badge" :class="crimeBadgeClass">{{ crimeZone.risk_level }}</span>
+      <span class="crime-state">{{ crimeZone.state }}</span>
+    </div>
+    <div class="crime-name">{{ crimeZone.name }}</div>
+    <div class="crime-info">{{ crimeZone.info }}</div>
+    <div class="crime-bar-wrap">
+      <div class="crime-bar-bg">
+        <div class="crime-bar-fill" :style="{ width: (crimeZone.crime_index * 100).toFixed(0) + '%', background: crimeBarColor }"></div>
+      </div>
+      <span class="crime-index-val">{{ (crimeZone.crime_index * 100).toFixed(0) }}/100</span>
+    </div>
+  </div>
+
   <!-- Compare mode tooltip -->
   <div
     v-else-if="compareVisible"
@@ -116,6 +136,28 @@ const hexVisible = computed(() => {
 });
 const hexCount = computed(() => props.pickInfo?.object?.count ?? 0);
 const hexElevation = computed(() => props.pickInfo?.object?.elevationValue ?? 0);
+
+// Crime zone tooltip
+const crimeVisible = computed(() =>
+  props.pickInfo?.picked &&
+  props.pickInfo?.layer?.id === 'crime-zones-layer' &&
+  props.pickInfo?.object
+);
+const crimeZone = computed(() => props.pickInfo?.object?.properties ?? {});
+const crimeX = computed(() => (props.pickInfo?.x ?? 0) + 14);
+const crimeY = computed(() => (props.pickInfo?.y ?? 0) + 14);
+const crimeBadgeClass = computed(() => {
+  const idx = crimeZone.value.crime_index ?? 0;
+  if (idx >= 0.85) return 'badge-critical';
+  if (idx >= 0.70) return 'badge-high';
+  return 'badge-medium';
+});
+const crimeBarColor = computed(() => {
+  const t = crimeZone.value.crime_index ?? 0;
+  const r = 255;
+  const g = Math.round(200 * (1 - t * 0.95));
+  return `rgb(${r},${g},0)`;
+});
 
 // Compare layer tooltip
 const compareVisible = computed(() => {
@@ -268,4 +310,78 @@ const sourceLabel = computed(() => {
 }
 .compare-val.blue  { color: #60a5fa; }
 .compare-val.amber { color: #fbbf24; }
+
+/* ── Crime zone tooltip ──────────────────────────────── */
+.crime-tooltip {
+  min-width: 210px;
+  padding: 10px 14px;
+}
+
+.crime-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 6px;
+}
+
+.crime-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.badge-critical { background: rgba(220, 38, 38, 0.25); color: #fca5a5; border: 1px solid rgba(220,38,38,0.4); }
+.badge-high     { background: rgba(234, 88, 12, 0.25); color: #fdba74; border: 1px solid rgba(234,88,12,0.4); }
+.badge-medium   { background: rgba(202, 138, 4,  0.25); color: #fde047; border: 1px solid rgba(202,138,4, 0.4); }
+
+.crime-state {
+  font-size: 11px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crime-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin-bottom: 5px;
+}
+
+.crime-info {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.crime-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.crime-bar-bg {
+  flex: 1;
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(255,255,255,0.08);
+  overflow: hidden;
+}
+
+.crime-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+
+.crime-index-val {
+  font-size: 11px;
+  font-weight: 700;
+  color: #f87171;
+  flex-shrink: 0;
+}
 </style>

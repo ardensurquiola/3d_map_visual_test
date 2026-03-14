@@ -29,7 +29,7 @@
         <SearchBar :shops="shops" @fly-to="onFlyTo" />
       </div>
 
-      <!-- View mode tabs -->
+      <!-- View mode tabs + crime toggle grouped together -->
       <div class="view-mode-tabs">
         <button
           class="view-tab"
@@ -46,11 +46,54 @@
           :class="{ active: filters.viewMode === 'compare' }"
           @click="filters.viewMode = 'compare'"
         >Ventas<span class="tab-extra"> Men. + Orden Prom.</span></button>
+
+        <div class="tab-divider"></div>
+
+        <!-- Crime zones toggle -->
+        <div class="crime-toggle-wrap">
+          <button
+            class="view-tab crime-tab"
+            :class="{ active: filters.showCrimeOverlay }"
+            @click="filters.showCrimeOverlay = !filters.showCrimeOverlay"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            Riesgo
+          </button>
+          <div class="crime-popover">
+            <div class="cp-title">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              Zonas de Riesgo Delictivo
+            </div>
+            <div class="cp-desc">
+              Overlay de criminalidad por municipio/alcaldía en la ZMVM.<br>
+              Fuente: SESNSP 2024 — Delitos del fuero común.<br>
+              Pasa el cursor sobre una zona para ver detalles.
+            </div>
+            <div class="cp-legend">
+              <div class="cp-legend-row">
+                <span class="cp-swatch" style="background: rgba(255,120,0,0.60);"></span>
+                <span class="cp-lbl">Alto</span>
+                <span class="cp-range">Índice 0.65 – 0.80</span>
+              </div>
+              <div class="cp-legend-row">
+                <span class="cp-swatch" style="background: rgba(255,20,0,0.78);"></span>
+                <span class="cp-lbl">Muy Alto</span>
+                <span class="cp-range">Índice 0.80+</span>
+              </div>
+            </div>
+            <div class="cp-tip">Haz clic en el botón para activar/desactivar.</div>
+          </div>
+        </div>
       </div>
 
-      <!-- Right: stats + fuente + user menu -->
-      <div class="header-right">
-        <!-- Loading / Error / Stats -->
+      <!-- Stats / Loading / Error — own element so mobile can reorder it -->
+      <div class="header-stats">
         <div v-if="loading" class="loading-badge">
           <span class="pulse"></span> Cargando…
         </div>
@@ -64,19 +107,14 @@
             {{ filteredShops.length.toLocaleString() }}<span class="stats-label-txt"> mostradas</span>
           </span>
         </div>
+      </div>
 
+      <!-- Right: fuente + user menu -->
+      <div class="header-right">
         <!-- Fuente de Datos dropdown -->
         <FuenteDropdown
           v-model="filters.sources"
           class="fuente-dropdown-header"
-        />
-
-        <!-- User avatar menu -->
-        <UserMenu
-          :user="user"
-          :display-name="userDisplayName"
-          @open-profile="profileOpen = true"
-          @sign-out="signOut"
         />
 
         <!-- Mobile-only filter toggle -->
@@ -87,6 +125,14 @@
             <line x1="11" y1="18" x2="13" y2="18"/>
           </svg>
         </button>
+
+        <!-- User avatar menu -->
+        <UserMenu
+          :user="user"
+          :display-name="userDisplayName"
+          @open-profile="profileOpen = true"
+          @sign-out="signOut"
+        />
       </div>
     </header>
 
@@ -218,6 +264,7 @@ const filters = ref({
   entrega:              [],
   principalProveedor:   [],
   contactoPersonal:     [],
+  showCrimeOverlay:     false,
 });
 
 const filteredShops = computed(() => {
@@ -303,6 +350,7 @@ const filteredShops = computed(() => {
 const viewMode = computed(() => filters.value.viewMode);
 const showPurchases = computed(() => filters.value.showPurchases);
 const showAvgOrder = computed(() => filters.value.showAvgOrder);
+const showCrimeOverlay = computed(() => filters.value.showCrimeOverlay);
 const onHover = ref((info) => info);
 
 const clickedShop = ref(null);
@@ -396,7 +444,7 @@ function openShopFromHex(shop) {
 }
 
 const onClickCallback = ref(onLayerClick);
-const { layers } = useDeckLayers(filteredShops, viewMode, onHover, showPurchases, showAvgOrder, onClickCallback);
+const { layers } = useDeckLayers(filteredShops, viewMode, onHover, showPurchases, showAvgOrder, onClickCallback, showCrimeOverlay);
 
 watch(viewMode, (mode) => {
   if (mode === 'compare') {
@@ -558,13 +606,38 @@ watch(user, (u) => {
 .compare-tab:hover { color: #c4b5fd; background: rgba(139, 92, 246, 0.1); }
 .compare-tab.active { background: #6d28d9; color: #fff; }
 
+.tab-divider {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+.crime-tab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #94a3b8;
+}
+.crime-tab:hover { color: #fdba74; background: rgba(255, 100, 0, 0.1); }
+.crime-tab.active { background: rgba(239, 68, 68, 0.18); color: #fca5a5; }
+.crime-tab.active svg { stroke: #f87171; }
+
+/* ── Header stats ─────────────────────────────────────── */
+.header-stats {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
 /* ── Header right ─────────────────────────────────────── */
 .header-right {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
-  margin-left: auto;
 }
 
 /* Stats pill */
@@ -674,75 +747,146 @@ watch(user, (u) => {
 
 /* ── Mobile ───────────────────────────────────────────── */
 @media (max-width: 640px) {
-  /* Three-row stacked header */
+  /*
+   * Switch header to CSS Grid — explicit named areas, no flex-order tricks.
+   *
+   * Row 1: [left: logo+title]   [right: avatar+filter]
+   * Row 2: [search ──────────]  [stats]
+   * Row 3: [tabs ─────────────────────────────────────]
+   */
   .app-header {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+      "left    right"
+      "search  stats"
+      "tabs    tabs";
     padding: 10px 12px 8px;
-    gap: 0;
-    row-gap: 8px;
+    gap: 8px 8px;
     align-items: center;
   }
 
-  /* ── Row 1: Logo + title + [spacer] + stats + avatar + filter ── */
-  .header-left {
-    order: 1;
-    flex: 1;
-    min-width: 0;
-  }
+  .header-left          { grid-area: left;   min-width: 0; }
+  .header-right         { grid-area: right;  gap: 6px; margin-left: 0; justify-self: end; }
+  .header-search-group  { grid-area: search; max-width: none; }
+  .header-stats         { grid-area: stats;  margin-left: 0; justify-content: flex-end; }
+  .view-mode-tabs       { grid-area: tabs; }
 
-  /* Show title, hide only the subtitle */
+  /* Title truncation */
   .app-subtitle { display: none; }
-  .app-title { font-size: 13px; }
-
-  .header-right {
-    order: 2;
-    flex-shrink: 0;
-    margin-left: 0;
-    gap: 7px;
+  .app-title {
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
+  .header-titles { min-width: 0; overflow: hidden; }
 
-  /* Stats: always visible on mobile, compact */
-  .stats-pill {
-    display: flex;
-    padding: 3px 8px;
-    font-size: 11px;
-    gap: 4px;
-  }
+  /* Stats compact */
+  .stats-pill    { padding: 3px 9px; font-size: 11px; gap: 4px; white-space: nowrap; }
   .stats-label-txt { display: none; }
+  .loading-badge { font-size: 11px; padding: 3px 8px; }
+  .error-badge   { font-size: 11px; padding: 3px 8px; }
 
-  /* Hide fuente on mobile */
+  /* Hide desktop-only items */
   .fuente-dropdown-header { display: none; }
+  .estado-select          { display: none; }
 
-  /* ── Row 2: Search bar (full width) ── */
-  .header-search-group {
-    order: 3;
-    flex: none;
-    width: 100%;
-    max-width: none;
-  }
-
-  .estado-select { display: none; }
-
-  /* ── Row 3: View mode tabs (full width, each tab equal) ── */
-  .view-mode-tabs {
-    order: 4;
-    width: 100%;
-    flex-basis: 100%;
-    padding: 3px;
-    gap: 3px;
-  }
-
-  .view-tab {
-    flex: 1;
-    text-align: center;
-    padding: 7px 4px;
-    font-size: 11px;
-  }
-
-  /* Shorten "Ventas Men. + Orden Prom." → "Ventas" */
+  /* Tabs: each button equal width */
+  .view-mode-tabs { padding: 3px; gap: 3px; }
+  .view-tab { flex: 1; text-align: center; padding: 7px 4px; font-size: 11px; }
+  .crime-toggle-wrap { flex: 1; display: flex; }
+  .crime-tab { flex: 1; justify-content: center; }
   .tab-extra { display: none; }
 
+  /* Popover doesn't work on touch */
+  .crime-popover { display: none !important; }
+
   .mobile-filter-btn { display: flex; }
-  .mobile-backdrop { display: block; }
+  .mobile-backdrop   { display: block; }
+}
+
+/* ── Crime zones toggle + popover ─────────────────────── */
+.crime-toggle-wrap {
+  position: relative;
+}
+
+.crime-popover {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 250px;
+  background: rgba(10, 15, 30, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 12px 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  z-index: 100;
+  pointer-events: none;
+}
+.crime-toggle-wrap:hover .crime-popover {
+  display: block;
+}
+
+.cp-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin-bottom: 8px;
+}
+.cp-title svg { stroke: #f87171; flex-shrink: 0; }
+
+.cp-desc {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.55;
+  margin-bottom: 10px;
+}
+
+.cp-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.cp-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.cp-swatch {
+  width: 22px;
+  height: 11px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 80, 0, 0.35);
+}
+
+.cp-lbl {
+  color: #cbd5e1;
+  font-weight: 500;
+  flex: 1;
+}
+
+.cp-range {
+  color: #475569;
+  font-size: 10px;
+}
+
+.cp-tip {
+  font-size: 10px;
+  color: #334155;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 8px;
+  text-align: center;
 }
 </style>

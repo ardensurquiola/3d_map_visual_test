@@ -415,6 +415,7 @@ function resetFilters() {
     entrega:              [],
     principalProveedor:   [],
     contactoPersonal:     [],
+    showCrimeOverlay:     false,
   });
 }
 

@@ -1,6 +1,7 @@
 import { computed } from 'vue';
 import { HexagonLayer } from '@deck.gl/aggregation-layers';
-import { ScatterplotLayer, ColumnLayer } from '@deck.gl/layers';
+import { ScatterplotLayer, ColumnLayer, GeoJsonLayer } from '@deck.gl/layers';
+import { CRIME_ZONES, crimeIndexToColor } from '../data/crimeZones.js';
 
 // Color map by shop type — [R, G, B, A]
 const SHOP_TYPE_COLORS = {
@@ -58,7 +59,7 @@ function aggregateForCompare(data) {
 }
 // ────────────────────────────────────────────────────────────────────────────
 
-export function useDeckLayers(filteredShops, viewMode, onHover, showPurchases, showAvgOrder, onClickCallback) {
+export function useDeckLayers(filteredShops, viewMode, onHover, showPurchases, showAvgOrder, onClickCallback, showCrimeOverlay) {
   const layers = computed(() => {
     const data = filteredShops.value.filter(
       (s) =>
@@ -68,6 +69,22 @@ export function useDeckLayers(filteredShops, viewMode, onHover, showPurchases, s
         Number.isFinite(+s.longitude)
     );
 
+    // ── Crime overlay (GeoJsonLayer) — always rendered below shop layers ──
+    const crimeLayer = showCrimeOverlay?.value
+      ? new GeoJsonLayer({
+          id: 'crime-zones-layer',
+          data: CRIME_ZONES,
+          pickable: true,
+          stroked: true,
+          filled: true,
+          getFillColor: (f) => crimeIndexToColor(f.properties.crime_index),
+          getLineColor: [255, 80, 0, 200],
+          lineWidthMinPixels: 1,
+          lineWidthMaxPixels: 2,
+          onHover: onHover.value,
+        })
+      : null;
+
     // ── 3D Density (HexagonLayer) ──────────────────────────────────────────
     if (viewMode.value === 'hex') {
       const getElevationWeight = (d) => {
@@ -75,6 +92,7 @@ export function useDeckLayers(filteredShops, viewMode, onHover, showPurchases, s
         return p != null && p > 0 ? Number(p) : 1;
       };
       return [
+        crimeLayer,
         new HexagonLayer({
           id: 'hexagon-layer',
           data,
@@ -98,7 +116,7 @@ export function useDeckLayers(filteredShops, viewMode, onHover, showPurchases, s
           onHover: onHover.value,
           onClick: onClickCallback?.value,
         }),
-      ];
+      ].filter(Boolean);
     }
 
     // ── Compare mode (two ColumnLayers, one pair per shop) ────────────────
@@ -160,11 +178,12 @@ export function useDeckLayers(filteredShops, viewMode, onHover, showPurchases, s
         );
       }
 
-      return activeLayers;
+      return [crimeLayer, ...activeLayers].filter(Boolean);
     }
 
     // ── Visited / Points (ScatterplotLayer) ───────────────────────────────
     return [
+      crimeLayer,
       new ScatterplotLayer({
         id: 'scatter-layer',
         data,
@@ -181,7 +200,7 @@ export function useDeckLayers(filteredShops, viewMode, onHover, showPurchases, s
         onHover: onHover.value,
         onClick: onClickCallback?.value,
       }),
-    ];
+    ].filter(Boolean);
   });
 
   return { layers };
